@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Procexx PPL Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ffffff">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #ffffff; color: #222; }
+    header { background: #f9f9f9; padding: 1rem; text-align: center; font-size: 1.5rem; font-weight: bold; border-bottom: 1px solid #ddd; }
+    nav { display: flex; justify-content: space-around; background: #fff; border-bottom: 1px solid #ddd; position: sticky; top: 0; }
+    nav button { flex: 1; padding: 1rem; border: none; background: none; font-size: 1rem; }
+    nav button.active { border-bottom: 3px solid #000; font-weight: bold; }
+    .content { padding: 1rem; }
+    .exercise { border: 1px solid #eee; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; background: #fafafa; }
+    .exercise h3 { margin: 0 0 .5rem 0; }
+    .sets { margin-top: .5rem; }
+    .set { display: flex; justify-content: space-between; margin-bottom: .5rem; }
+    .set input { width: 30%; padding: .3rem; }
+    .btn { padding: .5rem 1rem; border-radius: 8px; border: none; background: #000; color: #fff; cursor: pointer; margin-top: .5rem; }
+  </style>
+</head>
+<body>
+  <header>Procexx PPL</header>
+  <nav>
+    <button onclick="showDay('pushA')" class="active">Push A</button>
+    <button onclick="showDay('pushB')">Push B</button>
+    <button onclick="showDay('pullA')">Pull A</button>
+    <button onclick="showDay('pullB')">Pull B</button>
+    <button onclick="showDay('legs')">Legs</button>
+  </nav>
+  <div class="content" id="content"></div>
+  <script>
+    const routines = {
+      pushA: ["Press banca plano", "Press inclinado mancuernas", "Press militar", "Elevaciones laterales", "Fondos", "Extensión tríceps polea"],
+      pushB: ["Press banca inclinado", "Press Arnold", "Elevaciones frontales", "Press militar mancuernas", "Cruces en polea", "Extensión tríceps mancuernas"],
+      pullA: ["Dominadas", "Remo con barra", "Face pulls", "Curl bíceps barra", "Curl martillo", "Remo unilateral mancuerna"],
+      pullB: ["Jalón al pecho", "Remo en polea baja", "Pull over polea", "Curl bíceps mancuernas", "Curl concentración", "Encogimientos mancuernas"],
+      legs: ["Sentadilla", "Prensa", "Peso muerto rumano", "Step-ups", "Hip thrust", "Curl femoral tumbado"]
+    };
+    function loadRoutine(day) { return JSON.parse(localStorage.getItem(day)) || {}; }
+    function saveRoutine(day, data) { localStorage.setItem(day, JSON.stringify(data)); }
+    function renderExercise(day, exercise) {
+      const container = document.createElement("div");
+      container.className = "exercise";
+      const title = document.createElement("h3");
+      title.textContent = exercise;
+      container.appendChild(title);
+      const setsDiv = document.createElement("div");
+      setsDiv.className = "sets";
+      let saved = loadRoutine(day);
+      let sets = saved[exercise] || [];
+      sets.forEach((set, i) => {
+        const setDiv = document.createElement("div");
+        setDiv.className = "set";
+        setDiv.innerHTML = `<input type="number" placeholder="Peso (kg)" value="${set.weight}"><input type="number" placeholder="Reps" value="${set.reps}">`;
+        setsDiv.appendChild(setDiv);
+      });
+      const addSetBtn = document.createElement("button");
+      addSetBtn.className = "btn";
+      addSetBtn.textContent = "Añadir serie";
+      addSetBtn.onclick = () => {
+        const setDiv = document.createElement("div");
+        setDiv.className = "set";
+        setDiv.innerHTML = `<input type="number" placeholder="Peso (kg)"><input type="number" placeholder="Reps">`;
+        setsDiv.appendChild(setDiv);
+        saveData();
+      };
+      container.appendChild(setsDiv);
+      container.appendChild(addSetBtn);
+      function saveData() {
+        let allSets = [];
+        setsDiv.querySelectorAll(".set").forEach(setEl => {
+          const weight = setEl.querySelectorAll("input")[0].value;
+          const reps = setEl.querySelectorAll("input")[1].value;
+          if(weight || reps) allSets.push({weight, reps});
+        });
+        let all = loadRoutine(day);
+        all[exercise] = allSets;
+        saveRoutine(day, all);
+      }
+      setsDiv.addEventListener("input", saveData);
+      return container;
+    }
+    function showDay(day) {
+      document.querySelectorAll("nav button").forEach(btn => btn.classList.remove("active"));
+      document.querySelector(`nav button[onclick="showDay('${day}')"]`).classList.add("active");
+      const content = document.getElementById("content");
+      content.innerHTML = "";
+      routines[day].forEach(ex => { content.appendChild(renderExercise(day, ex)); });
+    }
+    showDay("pushA");
+    if ("serviceWorker" in navigator) { navigator.serviceWorker.register("service-worker.js"); }
+  </script>
+</body>
+</html>
